@@ -1,6 +1,6 @@
 #include "Butterscotch.mmh"
 
-LIBRARY libgles_cm.lib
+STATICLIBRARY nanoGL.lib
 
 MACRO ENABLE_LEGACY_GL
 

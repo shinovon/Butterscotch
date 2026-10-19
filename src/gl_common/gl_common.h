@@ -20,8 +20,7 @@ typedef struct GLRenderer GLRenderer;
 #include <vitaGL.h>
 #elif defined(__SYMBIAN32__)
 #ifdef ENABLE_LEGACY_GL
-#include <gles/gl.h>
-#include <gles/glext.h>
+#include <nanoGL/gl.h>
 #define GL_RGBA4 0x8056
 #else
 #include <gles2/gl2.h>

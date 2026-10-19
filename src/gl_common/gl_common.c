@@ -120,7 +120,9 @@ void GLCommon_destroy(Renderer* renderer) {
     
     for (uint32_t i = 0; gl->surfaceCount > i; i++) {
         if (gl->surfaceTexture[i] != 0) glDeleteTextures(1, &gl->surfaceTexture[i]);
+#if !defined(__SYMBIAN32__) && !defined(ENABLE_LEGACY_GL)
         if (gl->surfaces[i] != 0) glDeleteFramebuffers(1, &gl->surfaces[i]);
+#endif
     }
     gl->surfaceCount = 0;
 

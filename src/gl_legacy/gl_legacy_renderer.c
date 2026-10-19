@@ -8,7 +8,7 @@
 
 // The new D3D path targets desktop compatibility GL. Keep the shared console
 // renderer's existing API requirements until its depth/fog paths are ported.
-#if !defined(PLATFORM_PS3) && !defined(PLATFORM_VITA)
+#if !defined(PLATFORM_PS3) && !defined(PLATFORM_VITA) && !defined(__SYMBIAN32__)
 #define LEGACY_DESKTOP_D3D 1
 #else
 #define LEGACY_DESKTOP_D3D 0
@@ -2089,7 +2089,9 @@ static void glLegacySurfaceFree(Renderer* renderer, int32_t surfaceId) {
 #endif
     legacyGl->surfaceDepth[surfaceId] = 0;
     if (gl->surfaceTexture[surfaceId] != 0) glDeleteTextures(1, &gl->surfaceTexture[surfaceId]);
+#ifndef __SYMBIAN32__
     if (gl->surfaces[surfaceId] != 0) glDeleteFramebuffers(1, &gl->surfaces[surfaceId]);
+#endif
     gl->surfaces[surfaceId] = 0;
     gl->surfaceTexture[surfaceId] = 0;
     gl->surfaceWidth[surfaceId] = 0;
@@ -2158,7 +2160,7 @@ static bool glLegacySetRenderTarget(Renderer* renderer, int32_t surfaceId, bool 
         glApplyProjection(renderer, &camera->viewMatrix,&camera->projectionMatrix);
         return true;
     }
-
+#endif
 }
 
 // Resolves a surfaceID to a GL texture and its actual texture size
@@ -2282,8 +2284,10 @@ static void glLegacyDrawSurfaceColor(Renderer* renderer, int32_t surfaceId, int3
 
 
 static void glLegacySurfaceCopy(Renderer* renderer, int32_t destSurfaceID, int32_t destX, int32_t destY, int32_t srcSurfaceID, int32_t srcX, int32_t srcY, int32_t srcW, int32_t srcH, bool part) {
-    GLRenderer* gl = (GLRenderer*) renderer;
+#ifndef __SYMBIAN32__
+	GLRenderer* gl = (GLRenderer*) renderer;
     GLCommon_surfaceBlit(gl->surfaces, gl->surfaceWidth, gl->surfaceHeight, gl->surfaceCount, destSurfaceID, destX, destY, srcSurfaceID, srcX, srcY, srcW, srcH, part);
+#endif
 }
 
 static bool glLegacySurfaceGetPixels(Renderer* renderer, int32_t surfaceId, uint8_t* outRGBA) {

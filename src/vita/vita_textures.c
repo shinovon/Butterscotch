@@ -9,6 +9,9 @@
 #ifdef __SYMBIAN32__
 #define vglMalloc safeMalloc
 #define vglFree free
+#ifndef GL_ETC1_RGB8_OES
+#define GL_ETC1_RGB8_OES 0x8D64
+#endif
 #else
 #include <psp2/kernel/clib.h>
 #endif

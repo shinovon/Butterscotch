@@ -6,13 +6,19 @@
 #include <coecntrl.h>
 #include <eikstart.h>
 
-#include <egl/egl.h>
 #include <locale.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
+#ifdef ENABLE_LEGACY_GL
+#include <nanoGL/nanogl.h>
+#include <nanoGL/egl.h>
+#include <nanoGL/gl.h>
+#else
+#include <egl/egl.h>
 #include <gles2/gl2.h>
+#endif
 #include <string.h>
 
 extern "C" {
@@ -251,6 +257,8 @@ void ButterscotchContainer::ConstructL(const TRect& aRect, CAknAppUi* aAppUi) {
 //	Window().EnableAdvancedPointers();
 	EnableDragEvents();
 	ActivateL();
+	
+	nanoGL_Init();
 
 	EGLint attribs[] = {
 		EGL_BUFFER_SIZE,       16,
@@ -258,19 +266,28 @@ void ButterscotchContainer::ConstructL(const TRect& aRect, CAknAppUi* aAppUi) {
 		EGL_STENCIL_SIZE,      0,
 		EGL_SURFACE_TYPE,      EGL_WINDOW_BIT,
 		EGL_SAMPLES, 0,
+#ifdef ENABLE_MODERN_GL
 		EGL_COLOR_BUFFER_TYPE, EGL_RGB_BUFFER,
 		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+#endif
 		EGL_NONE
 	};
 
 	eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 	eglInitialize(eglDisplay, NULL, NULL);
+#ifdef ENABLE_MODERN_GL
 	eglBindAPI(EGL_OPENGL_ES_API);
+#endif
 
 	EGLint numConfigs;
 	eglChooseConfig(eglDisplay, attribs, &eglConfig, 1, &numConfigs);
 
-	EGLint contextAttribs[ 3 ] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
+	EGLint contextAttribs[] = {
+#ifdef ENABLE_MODERN_GL
+		EGL_CONTEXT_CLIENT_VERSION, 2,
+#endif
+		EGL_NONE
+	};
 	eglContext = eglCreateContext(eglDisplay, eglConfig, EGL_NO_CONTEXT, contextAttribs);
 
 	RWindow& window = Window();
@@ -470,12 +487,15 @@ void platformSleepUntil(uint64_t time) {
     }
 }
 
+#ifdef ENABLE_MODERN_GL
 typedef EGLBoolean (*NOK_resource_profiling)(EGLDisplay, EGLint, EGLint*, EGLint, EGLint*);
 static EGLint data_count;
 static EGLint* prof_data;
 static NOK_resource_profiling eglQueryProfilingData = nullptr;
+#endif
 
 extern "C" size_t symbianGetUsedVram(void) {
+#ifdef ENABLE_MODERN_GL
 	if (!eglQueryProfilingData) {
 		eglQueryProfilingData = (NOK_resource_profiling) eglGetProcAddress("eglQueryProfilingDataNOK");
 		eglQueryProfilingData(eglDisplay, EGL_PROF_QUERY_GLOBAL_BIT_NOK | EGL_PROF_QUERY_MEMORY_USAGE_BIT_NOK, NULL, 0, &data_count);
@@ -510,5 +530,8 @@ extern "C" size_t symbianGetUsedVram(void) {
 	}
 
 	return used;
+#else
+	return 0;
+#endif
 }
 
