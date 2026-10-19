@@ -10,8 +10,6 @@
 #include <vitaGL.h>
 #include "vita_textures.h"
 #elif defined(__SYMBIAN32__)
-#include <gles2/gl2.h>
-#include <gles2/gl2ext.h>
 #include "vita_textures.h"
 #else
 #include <glad/glad.h>

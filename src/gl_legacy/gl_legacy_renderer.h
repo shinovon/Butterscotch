@@ -11,6 +11,7 @@
 #include "rsxutil.h"
 #elif PLATFORM_VITA
 #include <vitaGL.h>
+#elif defined(__SYMBIAN32__)
 #else
 #include <glad/glad.h>
 #endif

@@ -11,8 +11,6 @@
 #include <vitaGL.h>
 #define GL_BOOL 0x8B56
 #elif defined(__SYMBIAN32__)
-#include <gles2/gl2.h>
-#include <gles2/gl2ext.h>
 #else
 #include <glad/glad.h>
 #endif

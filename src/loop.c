@@ -1337,7 +1337,7 @@ int App_frame(void) {
                 if (gfx == SOFTWARE && shouldRender)
                     SWRenderer_clearFrameBuffer(renderer, 0);
 #endif
-#if defined(ENABLE_LEGACY_GL) || defined(ENABLE_MODERN_GL)
+#if defined(ENABLE_LEGACY_GL) && !defined(__SYMBIAN32__) || defined(ENABLE_MODERN_GL)
                 if ((gfx == LEGACY_GL || gfx == MODERN_GL) && shouldRender) {
                     glBindFramebuffer(GL_FRAMEBUFFER, *hostFramebuffer);
                     glClear(GL_COLOR_BUFFER_BIT);

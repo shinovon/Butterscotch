@@ -65,7 +65,7 @@ typedef struct {
     bool value;
 } FrameSetEntry;
 
-#if defined(ENABLE_MODERN_GL) || defined(ENABLE_LEGACY_GL)
+#if defined(ENABLE_MODERN_GL) || defined(ENABLE_LEGACY_GL) && !defined(__SYMBIAN32__)
 #define ENABLE_SCREENSHOTS
 #endif
 

@@ -43,6 +43,9 @@ extern GLint  gPalettedUPaletteVLoc;
 #include "vita_textures.h"
 #define PS3_PALETTED_BEGIN(tpagIndex) ((void)0)
 #define PS3_PALETTED_END()            ((void)0)
+#elif defined(__SYMBIAN32__)
+#define PS3_PALETTED_BEGIN(tpagIndex) ((void)0)
+#define PS3_PALETTED_END()            ((void)0)
 #else
 #include <glad/glad.h>
 #define PS3_PALETTED_BEGIN(tpagIndex) ((void)0)
@@ -73,7 +76,7 @@ static inline int32_t nextPow2(int32_t v) {
 // (glGetStringi + GL_NUM_EXTENSIONS) path when glGetStringi is non-null
 // (GL 3.0+), otherwise falls back to the legacy glGetString(GL_EXTENSIONS)
 // approach so the code works with any GL loader (glad, PS3, etc.).
-#if !defined(PLATFORM_PS3) && !defined(PLATFORM_VITA)
+#if !defined(PLATFORM_PS3) && !defined(PLATFORM_VITA) && !defined(__SYMBIAN32__)
 static bool hasGLExtension(const char* name) {
     if (glGetStringi) {
         GLint numExts = 0;
@@ -99,6 +102,8 @@ static bool hasGLExtension(const char* name) {
 static bool hasFBO() {
 #if defined(PLATFORM_PS3) || defined(PLATFORM_VITA)
     return true;
+#elif defined(__SYMBIAN32__)
+    return false;
 #else
     return (glGenFramebuffers && glBlitFramebuffer);
 #endif
@@ -312,6 +317,7 @@ static void glEndGUI(MAYBE_UNUSED Renderer* renderer) {
 }
 
 static void glEndFrameInit(Renderer* renderer) {
+#ifndef __SYMBIAN32__
     GLRenderer* gl = (GLRenderer*) renderer;
     if (renderer->runner->usingAppSurface && !renderer->runner->appSurfaceAutoDraw) {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -319,9 +325,11 @@ static void glEndFrameInit(Renderer* renderer) {
     }
     int32_t appId = gl->base.runner->applicationSurfaceId;
     GLCommon_beginLetterboxBlit(gl->surfaces[appId], 0);
+#endif
 }
 
 static void glEndFrameEnd(Renderer* renderer) {
+#ifndef __SYMBIAN32__
     GLRenderer* gl = (GLRenderer*) renderer;
     if (renderer->runner->usingAppSurface && !renderer->runner->appSurfaceAutoDraw) {
         return;
@@ -329,6 +337,7 @@ static void glEndFrameEnd(Renderer* renderer) {
     int32_t appId = gl->base.runner->applicationSurfaceId;
     GLCommon_beginLetterboxBlit(gl->surfaces[appId], 0);
     GLCommon_endLetterboxBlit(gl->surfaceWidth[appId], gl->surfaceHeight[appId], gl->gameW, gl->gameH, gl->windowW, gl->windowH, 0);
+#endif
 }
 
 static void glRendererFlush(MAYBE_UNUSED Renderer* renderer) {}
@@ -1703,7 +1712,9 @@ static int32_t glCreateSpriteFromSurface(Renderer* renderer, int32_t surfaceID, 
     if (0 > surfaceID || (uint32_t) surfaceID >= gl->surfaceCount) return -1;
     if (gl->surfaces[surfaceID] == 0) return -1;
 
+#ifndef __SYMBIAN32__
     glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->surfaces[surfaceID]);
+#endif
 
     uint8_t* pixels = (uint8_t *)safeMalloc((size_t) w * (size_t) h * 4);
     if (pixels == nullptr)
@@ -1829,7 +1840,9 @@ static void glGpuSetBlendMode(Renderer* renderer, int32_t mode) {
     gl->currentDFactor = GLCommon_blendModeToDFactor(mode);
     gl->currentSFactorAlpha = gl->currentSFactor;
     gl->currentDFactorAlpha = gl->currentDFactor;
+#ifndef __SYMBIAN32__
     glBlendEquation(GLCommon_blendModeToEquation(mode));
+#endif
     glBlendFunc(gl->currentSFactor, gl->currentDFactor);
 }
 
@@ -1847,12 +1860,16 @@ static void glGpuSetBlendModeExt(Renderer* renderer, int32_t sfactor, int32_t df
     gl->currentSFactorAlpha = sfactor_alpha;
     gl->currentDFactorAlpha = dfactor_alpha;
 
+#ifdef __SYMBIAN32__
+    glBlendFunc(GLCommon_blendFactorToGL(sfactor), GLCommon_blendFactorToGL(dfactor));
+#else
     glBlendFuncSeparate(
         GLCommon_blendFactorToGL(sfactor),
         GLCommon_blendFactorToGL(dfactor),
         GLCommon_blendFactorToGL(sfactor_alpha),
         GLCommon_blendFactorToGL(dfactor_alpha)
     );
+#endif
 }
 
 static void glGpuSetBlendEnable(Renderer* renderer, bool enable) {
@@ -1921,6 +1938,9 @@ static void glGpuGetColorWriteEnable(Renderer* renderer, bool* red, bool* green,
 // ===[ Surfaces ]===
 
 static int32_t glLegacyCreateSurface(Renderer* renderer, int32_t width, int32_t height) {
+#ifdef __SYMBIAN32__
+	return -1;
+#else
     GLRenderer* gl = (GLRenderer*) renderer;
     GLLegacyRenderer* legacyGl = (GLLegacyRenderer*) renderer;
 
@@ -1938,15 +1958,7 @@ static int32_t glLegacyCreateSurface(Renderer* renderer, int32_t width, int32_t 
     glGenFramebuffers(1, &gl->surfaces[surfaceIndex]);
     glGenTextures(1, &gl->surfaceTexture[surfaceIndex]);
     glBindTexture(GL_TEXTURE_2D, gl->surfaceTexture[surfaceIndex]);
-#ifdef __SYMBIAN32__
-    if (GLCommon_surfaceInternalFormat(gl) == GL_RGBA4) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, nullptr);
-    } else {
-        glTexImage2D(GL_TEXTURE_2D, 0, GLCommon_surfaceInternalFormat(gl), texW, texH, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    }
-#else
     glTexImage2D(GL_TEXTURE_2D, 0, GLCommon_surfaceInternalFormat(gl), texW, texH, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-#endif
     GLCommon_applyTexFilter(renderer->texFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -1975,6 +1987,7 @@ static int32_t glLegacyCreateSurface(Renderer* renderer, int32_t width, int32_t 
     logInfo("GL: Created surface %u with size (%dx%d)\n", surfaceIndex, width, height);
     glBindFramebuffer(GL_FRAMEBUFFER, (GLuint) prevBinding);
     return (int32_t) surfaceIndex;
+#endif
 }
 
 static int32_t glLegacyEnsureApplicationSurface(Renderer* renderer, int32_t width, int32_t height) {
@@ -2016,6 +2029,7 @@ static float glLegacyGetSurfaceHeight(Renderer* renderer, int32_t surfaceId) {
 }
 
 static void glLegacySurfaceResize(Renderer* renderer, int32_t surfaceId, int32_t width, int32_t height) {
+#ifndef __SYMBIAN32__
     GLRenderer* gl = (GLRenderer*) renderer;
     GLLegacyRenderer* legacyGl = (GLLegacyRenderer*) renderer;
 
@@ -2061,6 +2075,7 @@ static void glLegacySurfaceResize(Renderer* renderer, int32_t surfaceId, int32_t
     gl->surfaceWidth[surfaceId] = width;
     gl->surfaceHeight[surfaceId] = height;
     logInfo("GL: Resized Surface %u to (%dx%d)\n", surfaceId, width, height);
+#endif
 }
 
 static void glLegacySurfaceFree(Renderer* renderer, int32_t surfaceId) {
@@ -2083,6 +2098,9 @@ static void glLegacySurfaceFree(Renderer* renderer, int32_t surfaceId) {
 }
 
 static bool glLegacySetRenderTarget(Renderer* renderer, int32_t surfaceId, bool implicitApplicationSurface) {
+#ifdef __SYMBIAN32__
+	return false;
+#else
     GLRenderer* gl = (GLRenderer*) renderer;
 
     int32_t viewCurrent = 0;

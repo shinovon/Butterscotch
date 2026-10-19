@@ -23,8 +23,10 @@ void GLCommon_beginFrame(GLRenderer* gl,  int32_t gameW, int32_t gameH, int32_t 
     gl->windowH = windowH;
 
     // Bind the application surface
+#if !defined(__SYMBIAN32__) || defined(ENABLE_MODERN_GL)
     int32_t appId = gl->base.runner->applicationSurfaceId;
     glBindFramebuffer(GL_FRAMEBUFFER, gl->surfaces[appId]);
+#endif
     glViewport(0, 0, gameW, gameH);
     gl->base.CPortX = 0;
     gl->base.CPortY = 0;
@@ -208,7 +210,9 @@ void GLCommon_beginGUI(
 ) {
     GLRenderer* gl = (GLRenderer*) renderer;
     if (targetSurfaceId == RENDER_TARGET_HOST_FRAMEBUFFER) {
+#if !defined(__SYMBIAN32__) || defined(ENABLE_MODERN_GL)
         glBindFramebuffer(GL_FRAMEBUFFER, hostFramebuffer);
+#endif
         int32_t sx, sy, ex, ey;
         GLCommon_computeLetterbox(guiW, guiH, portW, portH, &sx, &sy, &ex, &ey);
         glViewport(sx, sy, ex - sx, ey - sy);
@@ -395,12 +399,16 @@ bool GLCommon_surfaceGetPixels(GLuint* surfaces, int32_t* surfaceWidth, int32_t*
     if (0 >= w || 0 >= h)
         return false;
 
+#if !defined(__SYMBIAN32__) || defined(ENABLE_MODERN_GL)
     GLint prevFbo = 0;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
+#endif
     GLint prevPackAlign = 4;
     glGetIntegerv(GL_PACK_ALIGNMENT, &prevPackAlign);
-
+    
+#if !defined(__SYMBIAN32__) || defined(ENABLE_MODERN_GL)
     glBindFramebuffer(GL_FRAMEBUFFER, surfaces[surfaceId]);
+#endif
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
     uint8_t* tmp = (uint8_t *)safeMalloc((size_t) w * (size_t) h * 4);
@@ -414,7 +422,9 @@ bool GLCommon_surfaceGetPixels(GLuint* surfaces, int32_t* surfaceWidth, int32_t*
     free(tmp);
 
     glPixelStorei(GL_PACK_ALIGNMENT, prevPackAlign);
+#if !defined(__SYMBIAN32__) || defined(ENABLE_MODERN_GL)
     glBindFramebuffer(GL_FRAMEBUFFER, (GLuint) prevFbo);
+#endif
     return true;
 }
 
@@ -498,6 +508,7 @@ GLenum GLCommon_blendFactorToGL(int factor) {
     }
 }
 
+#if !defined(__SYMBIAN32__) || defined(ENABLE_MODERN_GL)
 GLenum GLCommon_blendModeToEquation(int mode) {
     switch (mode) {
         default:
@@ -513,6 +524,7 @@ GLenum GLCommon_blendModeToEquation(int mode) {
         case bm_max:              return GL_FUNC_ADD;
     }
 }
+#endif
 
 GLenum GLCommon_blendModeToSFactor(int mode) {
     switch (mode) {

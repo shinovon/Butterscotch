@@ -1,0 +1,8 @@
+#include "Butterscotch.mmh"
+
+LIBRARY libgles_cm.lib
+
+MACRO ENABLE_LEGACY_GL
+
+SOURCEPATH ../../src/gl_legacy
+SOURCE gl_legacy_renderer.c
