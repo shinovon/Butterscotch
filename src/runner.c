@@ -82,7 +82,7 @@ void Runner_updateCameraViewSimple(GMLCamera* camera) {
     Matrix4f_translate(&viewMatrix, -x, -y, 0.0f);
 
     Matrix4f projectionMatrix;
-    Matrix4f_Orthographic(&projectionMatrix, (float) camera->viewWidth, -((float) camera->viewHeight), 32000.0, 0.0);
+    Matrix4f_Orthographic(&projectionMatrix, (float) camera->viewWidth, ((float) camera->viewHeight), 32000.0, 0.0);
 
 
     camera->viewMatrix = viewMatrix;

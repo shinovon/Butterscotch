@@ -709,13 +709,36 @@ bool GLLegacyRenderer_ensureTextureLoaded(GLRenderer* gl, uint32_t pageId) {
     gl->textureHeights[pageId] = h;
 
     glBindTexture(GL_TEXTURE_2D, gl->glTextures[pageId]);
+#ifdef __SYMBIAN32__
+//    if (gl->textureFormat == GL_RGBA4) {
+//		uint16_t* rgba4444 = (uint16_t*)pixels;
+//		int n = w * h;
+//		for (int i = 0; i < n; i++) {
+//			rgba4444[i] = (((uint16_t)pixels[i * 4] >> 4) << 12) |
+//						  (((uint16_t)pixels[i * 4 + 1] >> 4) << 8) |
+//						  (((uint16_t)pixels[i * 4 + 2] >> 4) << 4) |
+//						  ((uint16_t)pixels[i * 4 + 3] >> 4);
+//		}
+//		GLint previousUnpackAlignment = 4;
+//		glGetIntegerv(GL_UNPACK_ALIGNMENT, &previousUnpackAlignment);
+//		glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
+//		glPixelStorei(GL_UNPACK_ALIGNMENT, previousUnpackAlignment);
+//	} else {
+	    glTexImage2D(GL_TEXTURE_2D, 0, gl->textureFormat, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+//	}
+#else
     glTexImage2D(GL_TEXTURE_2D, 0, gl->textureFormat, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+#endif
 
     free(pixels);
+    
+    bool isPOT = (w & (w - 1)) == 0 && (h & (h - 1)) == 0;
+	GLint wrapMode = isPOT ? GL_REPEAT : GL_CLAMP_TO_EDGE;
 
     GLCommon_applyTexFilter(gl->base.texFilter);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
     logInfo("GL: Loaded TXTR page %u (%dx%d)\n", pageId, w, h);
     return true;
 }

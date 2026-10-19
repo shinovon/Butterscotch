@@ -27,7 +27,8 @@ void GLCommon_beginFrame(GLRenderer* gl,  int32_t gameW, int32_t gameH, int32_t 
     int32_t appId = gl->base.runner->applicationSurfaceId;
     glBindFramebuffer(GL_FRAMEBUFFER, gl->surfaces[appId]);
 #endif
-    glViewport(0, 0, gameW, gameH);
+//    glViewport(0, 0, gameW, gameH);
+    glViewport(0, 0, windowW, windowH);
     gl->base.CPortX = 0;
     gl->base.CPortY = 0;
     gl->base.CPortW = gameW;
@@ -173,6 +174,10 @@ void GLCommon_setTexFilter(Renderer* renderer, bool enable) {
 }
 
 void GLCommon_applyViewport(GLRenderer* gl, int32_t portX, int32_t portY, int32_t portW, int32_t portH) {
+	portX = portX * (gl->windowW / portW);
+	portY = portY * (gl->windowH / portH);
+	portW = gl->windowW;
+	portH = gl->windowH;
     glViewport(portX, portY, portW, portH);
 
     gl->base.CPortX = portX;
