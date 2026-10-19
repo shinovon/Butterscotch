@@ -659,6 +659,7 @@ void glFogfv (GLenum pname, const GLfloat *params);
 void glFogi (GLenum pname, int param);
 void glCompressedTexImage2D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid *data);
 void glColor4ub (GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
+void glTexEnvi (GLenum target, GLenum pname, GLint param);
 GLboolean glIsEnabled (GLenum cap);
 GLboolean glIsTexture (GLuint texture);
 #ifdef __cplusplus

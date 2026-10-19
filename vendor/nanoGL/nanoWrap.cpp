@@ -1627,6 +1627,10 @@ void glColor4ub (GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha) {
 	FlushOnStateChange();
 	glEsImpl->glColor4ub(red, green, blue, alpha);
 }
+void glTexEnvi (GLenum target, GLenum pname, GLint param) {
+	FlushOnStateChange();
+	glEsImpl->glTexEnvi(target, pname, param);
+}
 GLboolean glIsEnabled (GLenum cap) {
 	FlushOnStateChange();
 	return glEsImpl->glIsEnabled(cap);

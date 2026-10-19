@@ -208,10 +208,12 @@ static void glInit(Renderer* renderer, DataWin* dataWin) {
 
     GLCommon_init(renderer);
 
+#ifndef __SYMBIAN32__
     if (!hasFBO()) {
         logError("GL: The legacy-gl renderer requires FBO support!\n");
         abort();
     }
+#endif
 
     // GL 2.0+ has NPOT textures as core; older GL (1.x) may or may not have
     // GL_ARB_texture_non_power_of_two. Only round up to power-of-two on GPUs
@@ -219,6 +221,8 @@ static void glInit(Renderer* renderer, DataWin* dataWin) {
     {
 #if defined(PLATFORM_PS3) || defined(PLATFORM_VITA)
         legacyGl->needsPOT = false;
+#elif defined(__SYMBIAN32__)
+        legacyGl->needsPOT = true;
 #else
         GLVer ver = GLCommon_getGLVersion();
         legacyGl->needsPOT = (ver.major < 2) && !hasGLExtension("GL_ARB_texture_non_power_of_two");

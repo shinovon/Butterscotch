@@ -314,7 +314,11 @@ void ButterscotchContainer::ConstructL(const TRect& aRect, CAknAppUi* aAppUi) {
 	args.lazyRooms = true;
 	args.lazyTextures = true;
 	args.lazyAudio = true;
+#ifdef ENABLE_LEGACY_GL
+	args.renderer = LEGACY_GL;
+#else
 	args.renderer = MODERN_GL;
+#endif
 	args.dataWinPath = "E:/butterscotch/data.win";
 	args.saveFolder = "E:/butterscotch/";
 	
@@ -368,7 +372,7 @@ void ButterscotchContainer::HandleResourceChange(TInt aType) {
 // platform impl
 
 extern "C" void platformLog(const logType type, const char *format, va_list va) {
-#ifdef _DEBUG
+//#ifdef _DEBUG
     const char* textPrefix = "";
     char buffer[1024];
     
@@ -393,7 +397,8 @@ extern "C" void platformLog(const logType type, const char *format, va_list va) 
     buffer[sizeof(buffer) - 1] = '\0';
     
     RDebug::Printf("%s", buffer);
-#endif
+    puts(buffer);
+//#endif
 }
 
 uint64_t nowNanos(void) {

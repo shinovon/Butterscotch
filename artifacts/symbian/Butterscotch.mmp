@@ -5,13 +5,15 @@ TARGET Butterscotch.exe
 LIBRARY libglesv2.lib
 LIBRARY libegl.lib
 
+ARMFPU vfpv2
+
 MACRO ENABLE_MODERN_GL
 MACRO USE_MINIAUDIO
 
 SOURCEPATH ../../src/symbian
 SOURCE symbian_audio.cpp symbian_atomics.c
-SOURCE stb_impl.c symbian.cpp
 SOURCEPATH ../../src/audio/miniaudio
+SOURCE ma_audio_system.c
 SOURCEPATH ../../src/gl
 SOURCE gl_renderer.c
 

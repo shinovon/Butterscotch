@@ -4,6 +4,8 @@ TARGET Butterscotch_gles1.exe
 
 STATICLIBRARY nanoGL.lib
 
+ARMFPU softvfp
+
 MACRO ENABLE_LEGACY_GL
 
 SOURCEPATH ../../src/gl_legacy
