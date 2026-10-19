@@ -7,6 +7,6 @@
 %{"shinovon"}
 :"shinovon"
 
-"$(EPOCROOT)Epoc32\release\$(PLATFORM)\$(TARGET)\Butterscotch.exe" - "!:\sys\bin\Butterscotch.exe"
+"$(EPOCROOT)Epoc32\release\$(PLATFORM)\$(TARGET)\Butterscotch_gles1.exe" - "!:\sys\bin\Butterscotch.exe"
 "$(EPOCROOT)\epoc32\data\z\private\10003a3f\import\apps\butterscotch_reg.rsc" - "!:\private\10003a3f\import\apps\butterscotch_reg.rsc"
 "$(EPOCROOT)\epoc32\data\z\resource\apps\butterscotch.rsc" - "!:\resource\apps\butterscotch.rsc"

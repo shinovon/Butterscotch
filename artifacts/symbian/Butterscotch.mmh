@@ -1,4 +1,3 @@
-TARGET Butterscotch.exe
 TARGETTYPE exe
 UID 0x100039CE 0xEC93FBDE
 
@@ -71,7 +70,6 @@ TARGETPATH \private\10003a3f\import\apps
 END
 
 MACRO SYMBIAN_OE_POSIX_SIGNALS
-MACRO USE_MINIAUDIO
 MACRO ENABLE_WAD14
 MACRO ENABLE_WAD16
 MACRO ENABLE_WAD17
@@ -121,9 +119,7 @@ SOURCE sha1.c
 SOURCEPATH ../../vendor/miniz
 SOURCE miniz.c miniz_tdef.c miniz_tinfl.c
 SOURCEPATH ../../src/symbian
-SOURCE stb_impl.c symbian.cpp symbian_audio.cpp symbian_atomics.c
-SOURCEPATH ../../src/audio/miniaudio
-SOURCE ma_audio_system.c
+SOURCE stb_impl.c symbian.cpp
 SOURCEPATH ../../src/physics/disabled
 SOURCE physics_disabled.c
 SOURCEPATH ../../src/physics
