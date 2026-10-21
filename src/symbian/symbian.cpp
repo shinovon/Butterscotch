@@ -12,9 +12,9 @@
 #include <time.h>
 #include <ctype.h>
 #ifdef ENABLE_LEGACY_GL
-#include <nanoGL/nanogl.h>
-#include <nanoGL/egl.h>
-#include <nanoGL/gl.h>
+#include "nanogl.h"
+#include "gl.h"
+#include "egl.h"
 #else
 #include <egl/egl.h>
 #include <gles2/gl2.h>

@@ -3,5 +3,4 @@ GCCE ARMV5 ARMV6
 
 PRJ_MMPFILES
 //Butterscotch.mmp
-nanoGL.mmp
 Butterscotch_gles1.mmp

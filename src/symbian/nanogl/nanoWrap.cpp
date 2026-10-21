@@ -25,6 +25,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gl.h"
 #include "glesinterface.h"
 
+#define MAX_VERTICES 8000
+#define MAX_INDICES 30000
+
 #define GL_TEXTURE0_ARB                     0x84C0
 #define GL_TEXTURE1_ARB                     0x84C1
 
@@ -200,9 +203,9 @@ struct VertexAttrib
 #endif
     };
 
-static VertexAttrib vertexattribs[8000];
+static VertexAttrib vertexattribs[MAX_VERTICES];
 
-static GLushort indexArray[30000];
+static GLushort indexArray[MAX_INDICES];
 
 static GLuint vertexCount = 0;
 static GLuint indexCount = 0;
@@ -300,6 +303,12 @@ void FlushOnStateChange()
 
 void glBegin(GLenum mode)
     {
+	if ((ptrVertexAttribArray - vertexattribs) > (MAX_VERTICES - 256) ||
+	        (ptrIndexArray - indexArray) > (MAX_INDICES - 512))
+	        {
+	        FlushOnStateChange();
+	        }
+	
     wrapperPrimitiveMode = mode;
     vertexMark = vertexCount;    
     ptrVertexAttribArrayMark = ptrVertexAttribArray;
@@ -1053,9 +1062,68 @@ void glClear (GLbitfield mask)
     glEsImpl->glClear(mask);
     }
 
+static void CheckAndForceFlush(void)
+    {
+    int currentVertsInBatch = ((unsigned char*)ptrVertexAttribArray - (unsigned char*)ptrVertexAttribArrayMark) / sizeof(VertexAttrib);
+    GLboolean shouldFlush = GL_FALSE;
+
+    // Check if we are near capacity for either vertices or indices
+    if ((ptrVertexAttribArray - vertexattribs) >= (MAX_VERTICES - 8) || 
+        (ptrIndexArray - indexArray) >= (MAX_INDICES - 16))
+        {
+        switch (wrapperPrimitiveMode)
+            {
+            case GL_QUADS:
+                // Only split on complete quad boundaries (multiples of 4)
+                if (currentVertsInBatch > 0 && (currentVertsInBatch % 4) == 0)
+                    {
+                    shouldFlush = GL_TRUE;
+                    }
+                break;
+
+            case GL_TRIANGLES:
+                // Only split on complete triangle boundaries (multiples of 3)
+                if (currentVertsInBatch > 0 && (currentVertsInBatch % 3) == 0)
+                    {
+                    shouldFlush = GL_TRUE;
+                    }
+                break;
+
+            case GL_LINES:
+                if (currentVertsInBatch > 0 && (currentVertsInBatch % 2) == 0)
+                    {
+                    shouldFlush = GL_TRUE;
+                    }
+                break;
+
+            default:
+                // For STRIP / FAN / POLYGON, we force a split if absolutely necessary
+                // to avoid memory corruption, though splitting may cause visual artifacts.
+                if (currentVertsInBatch >= 3)
+                    {
+                    shouldFlush = GL_TRUE;
+                    }
+                break;
+            }
+        }
+
+    if (shouldFlush)
+        {
+        GLenum savedMode = wrapperPrimitiveMode;
+        glEnd();                // Finalize index generation for vertices buffered so far
+        FlushOnStateChange();   // Issue glDrawElements and reset pointers
+        glBegin(savedMode);     // Re-open glBegin for upcoming vertices
+        }
+    }
 
 void glVertex3f( GLfloat x, GLfloat y, GLfloat z )
     {
+	CheckAndForceFlush();
+	if ((ptrVertexAttribArray - vertexattribs) >= MAX_VERTICES)
+	        {
+	        return; 
+	        }
+	
     GLfloat* vert = (GLfloat*)ptrVertexAttribArray++;
     *vert++ = x;
     *vert++ = y;
@@ -1165,6 +1233,13 @@ void glTexEnvf (GLenum target, GLenum pname, GLfloat param)
 
 void glVertex3fv( const GLfloat *v )
     {
+	CheckAndForceFlush();
+		if ((ptrVertexAttribArray - vertexattribs) >= MAX_VERTICES)
+		        {
+		        return; 
+		        }
+		
+		
     GLfloat* vert = (GLfloat*)ptrVertexAttribArray++;
     memcpy(vert, v, 3*sizeof(GLfloat));
 #if defined(__MULTITEXTURE_SUPPORT__)

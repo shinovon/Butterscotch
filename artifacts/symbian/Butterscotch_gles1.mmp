@@ -2,7 +2,7 @@
 
 TARGET Butterscotch_gles1.exe
 
-STATICLIBRARY nanoGL.lib
+USERINCLUDE ../../src/symbian/nanogl
 
 ARMFPU softvfp
 
@@ -10,3 +10,6 @@ MACRO ENABLE_LEGACY_GL
 
 SOURCEPATH ../../src/gl_legacy
 SOURCE gl_legacy_renderer.c
+
+SOURCEPATH ../../src/symbian/nanogl
+SOURCE nanogl.cpp nanowrap.cpp eglwrap.cpp
