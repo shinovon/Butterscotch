@@ -44,6 +44,7 @@ extern GLint  gPalettedUPaletteVLoc;
 #define PS3_PALETTED_BEGIN(tpagIndex) ((void)0)
 #define PS3_PALETTED_END()            ((void)0)
 #elif defined(__SYMBIAN32__)
+#include "vita_textures.h"
 #define PS3_PALETTED_BEGIN(tpagIndex) ((void)0)
 #define PS3_PALETTED_END()            ((void)0)
 #else
@@ -640,10 +641,55 @@ static void glClearScreen(MAYBE_UNUSED Renderer* renderer, uint32_t color, float
 
 }
 
+#ifdef __SYMBIAN32__
+static bool unloadOldestTexture(GLRenderer* gl, uint32_t currentPageId) {
+    uint32_t res = UINT32_MAX;
+    int min = INT32_MAX;
+    
+    for (uint32_t i = 0; i < gl->textureCount && i < gl->originalTexturePageCount; ++i) {
+        if (i == currentPageId || !gl->textureLoaded[i])
+            continue;
+        
+        int j = gl->textureLastUsed[i];
+        if (j >= min) continue;
+        
+        min = j;
+        res = i;
+    }
+    
+    if (res == UINT32_MAX) return false;
+    
+    GLLegacyRenderer_unloadTexture(gl, res);
+    return true;
+}
+
+#define UNLOAD_THRESHOLD 1000
+static void unloadUnusedTextures(GLRenderer* gl, uint32_t currentPageId) {
+    if (gl->base.runner->frameCount < UNLOAD_THRESHOLD) return;
+    bool flushed = false;
+    int threshold = gl->base.runner->frameCount - UNLOAD_THRESHOLD;
+    
+    for (uint32_t i = 0; i < gl->textureCount && i < gl->originalTexturePageCount; ++i) {
+        if (i == currentPageId || !gl->textureLoaded[i])
+            continue;
+        if (gl->textureLastUsed[i] > threshold)
+            continue;
+        
+        GLLegacyRenderer_unloadTexture(gl, i);
+    }
+}
+#endif
+
 // Lazily decodes and uploads a TXTR page on first access.
 // Returns true if the texture is ready, false if it failed to decode.
 bool GLLegacyRenderer_ensureTextureLoaded(GLRenderer* gl, uint32_t pageId) {
-    if (gl->textureLoaded[pageId]) return (gl->textureWidths[pageId] != 0);
+    if (gl->textureLoaded[pageId]) {
+        if (gl->textureWidths[pageId] != 0) {
+            gl->textureLastUsed[pageId] = gl->base.runner->frameCount;
+            return true;
+        }
+        return false;
+    }
 
     gl->textureLoaded[pageId] = true;
 
@@ -668,7 +714,7 @@ bool GLLegacyRenderer_ensureTextureLoaded(GLRenderer* gl, uint32_t pageId) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     free(pixels);
-#elif defined(PLATFORM_VITA)
+#elif defined(PLATFORM_VITA) || defined(__SYMBIAN32__)
     if (VitaTextures_Active()) {
         glBindTexture(GL_TEXTURE_2D, gl->glTextures[pageId]);
         if (!VitaTextures_LoadPage(pageId, &gl->textureWidths[pageId], &gl->textureHeights[pageId])) {
@@ -707,26 +753,52 @@ bool GLLegacyRenderer_ensureTextureLoaded(GLRenderer* gl, uint32_t pageId) {
 
     gl->textureWidths[pageId] = w;
     gl->textureHeights[pageId] = h;
+    
+    if (gl->glTextures[pageId] == 0) {
+        glGenTextures(1, &gl->glTextures[pageId]);
+    }
 
     glBindTexture(GL_TEXTURE_2D, gl->glTextures[pageId]);
 #ifdef __SYMBIAN32__
-//    if (gl->textureFormat == GL_RGBA4) {
-//		uint16_t* rgba4444 = (uint16_t*)pixels;
-//		int n = w * h;
-//		for (int i = 0; i < n; i++) {
-//			rgba4444[i] = (((uint16_t)pixels[i * 4] >> 4) << 12) |
-//						  (((uint16_t)pixels[i * 4 + 1] >> 4) << 8) |
-//						  (((uint16_t)pixels[i * 4 + 2] >> 4) << 4) |
-//						  ((uint16_t)pixels[i * 4 + 3] >> 4);
-//		}
-//		GLint previousUnpackAlignment = 4;
-//		glGetIntegerv(GL_UNPACK_ALIGNMENT, &previousUnpackAlignment);
-//		glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
-//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
-//		glPixelStorei(GL_UNPACK_ALIGNMENT, previousUnpackAlignment);
-//	} else {
-	    glTexImage2D(GL_TEXTURE_2D, 0, gl->textureFormat, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-//	}
+    unloadUnusedTextures(gl, pageId);
+    glBindTexture(GL_TEXTURE_2D, gl->glTextures[pageId]);
+    
+    if (gl->textureFormat == GL_RGBA4) {
+        uint16_t* rgba4444 = (uint16_t*)pixels;
+        int n = w * h;
+        for (int i = 0; i < n; i++) {
+        	rgba4444[i] = (((uint16_t)pixels[i * 4] >> 4) << 12) |
+        	              (((uint16_t)pixels[i * 4 + 1] >> 4) << 8) |
+        	              (((uint16_t)pixels[i * 4 + 2] >> 4) << 4) |
+        	              ((uint16_t)pixels[i * 4 + 3] >> 4);
+        }
+    }
+    
+    while (true) {
+        while (glGetError() != GL_NO_ERROR);
+        
+        if (gl->textureFormat == GL_RGBA4) {
+            GLint previousUnpackAlignment = 4;
+            glGetIntegerv(GL_UNPACK_ALIGNMENT, &previousUnpackAlignment);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, previousUnpackAlignment);
+        } else {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        }
+        
+        if (glGetError() != GL_OUT_OF_MEMORY) break;
+        logWarn("GL: Failed to upload TXTR page %u (%dx%d), retrying\n",
+            pageId, gl->textureWidths[pageId], gl->textureHeights[pageId]);
+        
+        if (!unloadOldestTexture(gl, pageId)) {
+            logError("GL: Failed to free VRAM, aborting texture upload\n");
+            free(pixels);
+            return false;
+        }
+        
+        glBindTexture(GL_TEXTURE_2D, gl->glTextures[pageId]);
+    }
 #else
     glTexImage2D(GL_TEXTURE_2D, 0, gl->textureFormat, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 #endif
@@ -741,6 +813,21 @@ bool GLLegacyRenderer_ensureTextureLoaded(GLRenderer* gl, uint32_t pageId) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
     logInfo("GL: Loaded TXTR page %u (%dx%d)\n", pageId, w, h);
     return true;
+}
+
+void GLLegacyRenderer_unloadTexture(GLRenderer* gl, uint32_t pageId) {
+    if (!gl->textureLoaded[pageId]) return;
+    
+    if (gl->glTextures[pageId] != 0) {
+        glDeleteTextures(1, &gl->glTextures[pageId]);
+        gl->glTextures[pageId] = 0;
+    }
+    
+    gl->textureLoaded[pageId] = false;
+    gl->textureWidths[pageId] = 0;
+    gl->textureHeights[pageId] = 0;
+    
+    logInfo("GL: Unloaded TXTR page %u\n", pageId);
 }
 
 static void glDrawSprite(Renderer* renderer, int32_t tpagIndex, float x, float y, float originX, float originY, float xscale, float yscale, float angleDeg, uint32_t color, float alpha) {

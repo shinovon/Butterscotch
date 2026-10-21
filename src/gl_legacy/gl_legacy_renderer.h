@@ -33,6 +33,7 @@ typedef struct {
 } GLLegacyRenderer;
 
 bool GLLegacyRenderer_ensureTextureLoaded(GLRenderer* gl, uint32_t pageId);
+void GLLegacyRenderer_unloadTexture(GLRenderer* gl, uint32_t pageId);
 Renderer* GLLegacyRenderer_create(void);
 
 #endif /* _BS_GL_LEGACY_RENDERER_H_ */
